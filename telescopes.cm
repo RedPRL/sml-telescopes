@@ -1,0 +1,9 @@
+Library
+  signature TELESCOPE
+  signature LABEL
+  functor Telescope
+  functor TelescopeNotation
+is
+  $libs/cmlib/cmlib.cm
+  src/telescope.sig
+  src/telescope.fun

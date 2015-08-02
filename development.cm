@@ -1,0 +1,7 @@
+Library
+  signature TELESCOPE
+  signature LABEL
+  functor Telescope
+  functor TelescopeNotation
+is
+  telescopes.cm (bind:(anchor:libs value:lib))
