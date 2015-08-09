@@ -1,11 +1,17 @@
 functor MergeDict (Dict : DICT) =
 struct
+  datatype merge_policy = DISJOINT | OVERWRITE
+
   exception DictsNotDisjoint
-  fun mergeDict (d1, d2) =
+  fun mergeDict policy (d1, d2) =
     Dict.foldl (fn (a, b, d3) =>
-      case Dict.find d3 a of
-           NONE => Dict.insert d3 a b
-         | SOME _ => raise DictsNotDisjoint) d2 d1
+      case policy of
+           OVERWRITE => Dict.insert d3 a b
+         | DISJOINT =>
+             (case Dict.find d3 a of
+                  NONE => Dict.insert d3 a b
+                | SOME _ => raise DictsNotDisjoint)
+    ) d2 d1
 end
 
 functor Telescope (L : LABEL) :> TELESCOPE where Label = L =
@@ -40,7 +46,7 @@ struct
                 NONE => preds'
               | SOME lblpst => Dict.insert preds' lblpst (#last tele)
        in
-         MergeDict.mergeDict (#preds tele, preds'')
+         MergeDict.mergeDict MergeDict.DISJOINT (#preds tele, preds'')
        end,
      nexts =
        let
@@ -50,10 +56,10 @@ struct
                 NONE => nexts'
               | SOME lblpst => Dict.insert nexts' (#last tele) lblpst
        in
-         MergeDict.mergeDict (#nexts tele, nexts'')
+         MergeDict.mergeDict MergeDict.DISJOINT (#nexts tele, nexts'')
        end,
-     vals = MergeDict.mergeDict (vals, #vals tele),
-     names = MergeStringListDict.mergeDict (names, #names tele)}
+     vals = MergeDict.mergeDict MergeDict.DISJOINT (vals, #vals tele),
+     names = MergeStringListDict.mergeDict MergeStringListDict.OVERWRITE (names, #names tele)}
     | interposeAfter tele (lbl, NONE) = tele
     | interposeAfter NONE (lbl, tele) = tele
 
