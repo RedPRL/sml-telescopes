@@ -63,6 +63,11 @@ struct
     | interposeAfter tele (lbl, NONE) = tele
     | interposeAfter NONE (lbl, tele) = tele
 
+
+  fun append (NONE, t) = t
+    | append (t as SOME {last,...}, t') =
+        interposeAfter t (last, t')
+
   fun modify NONE _ = NONE
     | modify (SOME {first,last,preds,nexts,vals,names}) (lbl, f) =
       let
