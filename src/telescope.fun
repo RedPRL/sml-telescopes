@@ -33,6 +33,14 @@ struct
 
   exception LabelExists
 
+  fun foldr (f : ('a * 'b) -> 'b) (init : 'b) (t as SOME r : 'a telescope) : 'b =
+    Dict.foldr (fn (_,a,b) => f (a,b)) init (#vals r)
+    | foldr f init NONE = init
+
+  fun foldl (f : ('a * 'b) -> 'b) (init : 'b) (t as SOME r : 'a telescope) : 'b =
+    Dict.foldl (fn (_,a,b) => f (a,b)) init (#vals r)
+    | foldl f init NONE = init
+
   fun interposeAfter (SOME {first,last,preds,nexts,vals,names}) (lbl, SOME tele) = SOME
     {first = first,
      last = case SOME (Dict.lookup nexts lbl) handle _ => NONE of
