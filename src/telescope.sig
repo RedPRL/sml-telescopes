@@ -60,6 +60,8 @@ sig
   val modify : 'a telescope -> label * ('a -> 'a) -> 'a telescope
   val remove : 'a telescope -> label -> 'a telescope
   val interposeAfter : 'a telescope -> label * 'a telescope -> 'a telescope
+  val foldr : ('a * 'b -> 'b) -> 'b -> 'a telescope -> 'b
+  val foldl : ('a * 'b -> 'b) -> 'b -> 'a telescope -> 'b
 
   (* comparison *)
   val subtelescope : ('a * 'a -> bool) -> 'a telescope * 'a telescope -> bool
