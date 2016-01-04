@@ -14,7 +14,7 @@ struct
     ) d2 d1
 end
 
-functor Telescope (L : LABEL) :> TELESCOPE where Label = L =
+functor Telescope (L : LABEL) :> TELESCOPE where type Label.t = L.t =
 struct
   type label = L.t
   structure Label = L
@@ -242,7 +242,7 @@ struct
           | go (Cons (lbl, a, tele')) r =
               go (out tele') (r ^ ", " ^ L.toString lbl ^ " : " ^ pretty a)
       in
-        go (out tele) "·"
+        go (out tele) "\194\183"
       end
   end
 
