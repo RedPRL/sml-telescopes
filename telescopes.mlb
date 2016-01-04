@@ -1,0 +1,11 @@
+local
+  $(SML_LIB)/basis/basis.mlb
+  lib/cmlib.mlb
+  src/telescope.sig
+  src/telescope.fun
+in
+  signature TELESCOPE
+  signature LABEL
+  functor Telescope
+  functor TelescopeNotation
+end

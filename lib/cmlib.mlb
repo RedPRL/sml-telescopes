@@ -1,0 +1,8 @@
+local
+  cmlib/cmlib.mlb
+in
+  signature DICT
+  signature ORDERED
+  functor SplayDict
+  structure StringListDict
+end

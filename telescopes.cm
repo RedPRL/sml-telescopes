@@ -4,6 +4,7 @@ Library
   functor Telescope
   functor TelescopeNotation
 is
-  $libs/cmlib/cmlib.cm
+  $/basis.cm
+  lib/cmlib.cm
   src/telescope.sig
   src/telescope.fun
