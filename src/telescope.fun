@@ -31,8 +31,6 @@ struct
          vals : 'a Dict.dict}
     | NIL
 
-  exception LabelExists
-
   fun foldr f init =
     fn TEL r => Dict.foldr (fn (_,a,b) => f (a,b)) init (#vals r)
      | NIL => init
@@ -120,7 +118,7 @@ struct
            nexts = nexts,
            vals = Dict.map f vals}
 
-  structure SNOCView =
+  structure SnocView =
   struct
     type 'a telescope = 'a telescope
     type label = label
@@ -150,7 +148,7 @@ struct
       | into (SNOC (tel, lbl, a)) = snoc tel lbl a
   end
 
-  structure CONSView =
+  structure ConsView =
   struct
     type 'a telescope = 'a telescope
     type label = label
@@ -190,7 +188,7 @@ struct
   end
 
   local
-    open CONSView
+    open ConsView
   in
     fun modifyAfter lbl f =
       fn NIL => NIL
@@ -224,7 +222,7 @@ struct
   end
 
   local
-    open SNOCView
+    open SnocView
   in
     fun search (tele : 'a telescope) phi =
       let
@@ -262,7 +260,7 @@ sig
   val toString : ('a -> string) -> 'a T.telescope -> string
 end =
 struct
-  open T.CONSView
+  open T.ConsView
 
   fun toString pretty tele =
     let

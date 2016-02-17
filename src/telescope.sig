@@ -32,8 +32,6 @@ sig
   structure Label : ORDERED
   type label = Label.t
 
-  exception LabelExists
-
   (* smart constructors *)
   val empty : 'a telescope
   val snoc : 'a telescope -> label -> 'a -> 'a telescope
