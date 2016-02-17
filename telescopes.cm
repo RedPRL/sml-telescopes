@@ -1,7 +1,7 @@
 Library
   signature TELESCOPE
-  signature LABEL
   functor Telescope
+  functor ShowTelescope
   functor TelescopeNotation
 is
   $/basis.cm

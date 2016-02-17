@@ -14,7 +14,7 @@ struct
     ) d2 d1
 end
 
-functor Telescope (L : LABEL) :> TELESCOPE where type Label.t = L.t =
+functor Telescope (L : ORDERED) :> TELESCOPE where type Label.t = L.t =
 struct
   type label = L.t
   structure Label = L
@@ -216,17 +216,6 @@ struct
       in
         go (out tele)
       end
-
-
-
-    fun toString pretty tele =
-      let
-        fun go Empty r = r
-          | go (Cons (lbl, a, tele')) r =
-              go (out tele') (r ^ ", " ^ L.toString lbl ^ " : " ^ pretty a)
-      in
-        go (out tele) "\194\183"
-      end
   end
 
   local
@@ -259,6 +248,25 @@ struct
       subtelescope test (t1, t2)
         andalso subtelescope test (t2, t1)
   end
+end
+
+functor ShowTelescope
+  (structure T : TELESCOPE
+   val labelToString : T.label -> string) :>
+sig
+  val toString : ('a -> string) -> 'a T.telescope -> string
+end =
+struct
+  open T.ConsView
+
+  fun toString pretty tele =
+    let
+      fun go Empty r = r
+        | go (Cons (lbl, a, tele')) r =
+            go (out tele') (r ^ ", " ^ labelToString lbl ^ " : " ^ pretty a)
+    in
+      go (out tele) "\194\183"
+    end
 end
 
 functor TelescopeNotation (T : TELESCOPE) : TELESCOPE_NOTATION =

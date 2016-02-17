@@ -25,18 +25,11 @@ sig
   val into : ('a, 'a telescope) view -> 'a telescope
 end
 
-signature LABEL =
-sig
-  include ORDERED
-
-  val toString : t -> string
-end
-
 signature TELESCOPE =
 sig
   type 'a telescope
 
-  structure Label : LABEL
+  structure Label : ORDERED
   type label = Label.t
 
   exception LabelExists
@@ -65,9 +58,6 @@ sig
   (* comparison *)
   val subtelescope : ('a * 'a -> bool) -> 'a telescope * 'a telescope -> bool
   val eq : ('a * 'a -> bool) -> 'a telescope * 'a telescope -> bool
-
-  (* pretty printing *)
-  val toString : ('a -> string) -> 'a telescope -> string
 
   (* These views may be used to lazily walk along a telescope *)
   structure SnocView : SNOC_VIEW

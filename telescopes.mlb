@@ -5,7 +5,7 @@ local
   src/telescope.fun
 in
   signature TELESCOPE
-  signature LABEL
   functor Telescope
+  functor ShowTelescope
   functor TelescopeNotation
 end
