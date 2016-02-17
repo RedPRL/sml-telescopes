@@ -44,6 +44,8 @@ sig
   val find : 'a telescope -> label -> 'a option
   val search : 'a telescope -> ('a -> bool) -> (label * 'a) option
 
+  exception Absent
+
   (* manipulation *)
   val map : ('a -> 'b) -> 'a telescope -> 'b telescope
   val modify : label -> ('a -> 'a) -> 'a telescope -> 'a telescope

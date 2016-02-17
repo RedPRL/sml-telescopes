@@ -72,11 +72,19 @@ struct
     | append (t as TEL {last,...}, t') =
         interposeAfter t (last, t')
 
+  exception Absent
+
+  fun lookup (TEL {vals,...}) lbl = (Dict.lookup vals lbl handle _ => raise Absent)
+    | lookup NIL lbl = raise Absent
+
+  fun find (TEL {vals,...}) lbl = Dict.find vals lbl
+    | find _ _ = NONE
+
   fun modify lbl f =
     fn NIL => NIL
-     | TEL {first,last,preds,nexts,vals} =>
+     | tel as TEL {first,last,preds,nexts,vals} =>
          let
-           val a = Dict.lookup vals lbl
+           val a = lookup tel lbl
            val vals' = Dict.insert vals lbl (f a)
          in
            TEL
@@ -87,11 +95,6 @@ struct
               vals = vals'}
          end
 
-  fun lookup (TEL {vals,...} : 'a telescope) lbl = Dict.lookup vals lbl
-    | lookup NIL lbl = raise Fail "Lookup empty"
-
-  fun find (TEL {vals,...} : 'a telescope) lbl = Dict.find vals lbl
-    | find _ _ = NONE
 
   val empty = NIL
 
@@ -129,7 +132,7 @@ struct
       | SNOC of 'r * label * 'a
 
     fun out NIL = EMPTY
-      | out (TEL {first,last,preds,nexts,vals}) =
+      | out (tel as TEL {first,last,preds,nexts,vals}) =
           let
             val tail =
               case Dict.find preds last of
@@ -142,7 +145,7 @@ struct
                         nexts = nexts,
                         vals = vals}
           in
-            SNOC (tail, last, Dict.lookup vals last)
+            SNOC (tail, last, lookup tel last)
           end
 
     fun into EMPTY = empty
@@ -159,7 +162,7 @@ struct
       | CONS of label * 'a * 'r
 
     fun out NIL = EMPTY
-      | out (TEL {first,last,preds,nexts,vals}) =
+      | out (tel as TEL {first,last,preds,nexts,vals}) =
           let
             val tail =
               case Dict.find nexts first of
@@ -172,7 +175,7 @@ struct
                        nexts = nexts,
                        vals = vals}
           in
-            CONS (first, Dict.lookup vals first, tail)
+            CONS (first, lookup tel first, tail)
           end
 
     fun outAfter NIL lbl = EMPTY
@@ -198,7 +201,7 @@ struct
              fun go D =
                fn EMPTY => D
                 | CONS (lbl, a, tele) =>
-                    go (Dict.insert D lbl (f (Dict.lookup D lbl))) (out tele)
+                    go (Dict.insert D lbl (f (Dict.lookup D lbl handle _ => raise Absent))) (out tele)
            in
               TEL
                 {first = first,
