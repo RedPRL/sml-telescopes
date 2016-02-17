@@ -30,7 +30,6 @@ sig
   include ORDERED
 
   val toString : t -> string
-  val prime : t -> t
 end
 
 signature TELESCOPE =
@@ -47,7 +46,6 @@ sig
   val snoc : 'a telescope -> label * 'a -> 'a telescope
   val cons : label * 'a -> 'a telescope -> 'a telescope
 
-  val fresh : 'a telescope * label -> label
   val append : 'a telescope * 'a telescope -> 'a telescope
 
   (* lookup and search *)

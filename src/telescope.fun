@@ -21,15 +21,13 @@ struct
 
   structure Dict = SplayDict(structure Key = L)
   structure MergeDict = MergeDict (Dict)
-  structure MergeStringListDict = MergeDict (StringListDict)
 
   type 'a telescope =
     {first : L.t,
      last : L.t,
      preds : L.t Dict.dict,
      nexts : L.t Dict.dict,
-     vals : 'a Dict.dict,
-     names : L.t StringListDict.dict} option
+     vals : 'a Dict.dict} option
 
   exception LabelExists
 
@@ -41,7 +39,7 @@ struct
     Dict.foldl (fn (_,a,b) => f (a,b)) init (#vals r)
     | foldl f init NONE = init
 
-  fun interposeAfter (SOME {first,last,preds,nexts,vals,names}) (lbl, SOME tele) = SOME
+  fun interposeAfter (SOME {first,last,preds,nexts,vals}) (lbl, SOME tele) = SOME
     {first = first,
      last = case SOME (Dict.lookup nexts lbl) handle _ => NONE of
                  NONE => #last tele
@@ -66,8 +64,7 @@ struct
        in
          MergeDict.mergeDict MergeDict.DISJOINT (#nexts tele, nexts'')
        end,
-     vals = MergeDict.mergeDict MergeDict.DISJOINT (vals, #vals tele),
-     names = MergeStringListDict.mergeDict MergeStringListDict.OVERWRITE (names, #names tele)}
+     vals = MergeDict.mergeDict MergeDict.DISJOINT (vals, #vals tele)}
     | interposeAfter tele (lbl, NONE) = tele
     | interposeAfter NONE (lbl, tele) = tele
 
@@ -77,7 +74,7 @@ struct
         interposeAfter t (last, t')
 
   fun modify NONE _ = NONE
-    | modify (SOME {first,last,preds,nexts,vals,names}) (lbl, f) =
+    | modify (SOME {first,last,preds,nexts,vals}) (lbl, f) =
       let
         val a = Dict.lookup vals lbl
         val vals' = Dict.insert vals lbl (f a)
@@ -87,8 +84,7 @@ struct
            last = last,
            preds = preds,
            nexts = nexts,
-           vals = vals',
-           names = names}
+           vals = vals'}
       end
 
   fun lookup (SOME {vals,...} : 'a telescope) lbl = Dict.lookup vals lbl
@@ -96,13 +92,6 @@ struct
 
   fun find (SOME {vals,...} : 'a telescope) lbl = Dict.find vals lbl
     | find _ _ = NONE
-
-  fun fresh (SOME tele : 'a telescope, lbl) =
-    if StringListDict.member (#names tele) (Label.toString lbl) then
-      fresh (SOME tele, L.prime lbl)
-    else
-      lbl
-    | fresh (NONE, lbl) = lbl
 
   val empty = NONE
 
@@ -112,8 +101,7 @@ struct
      last = lbl,
      nexts = Dict.empty,
      preds = Dict.empty,
-     vals = Dict.insert Dict.empty lbl a,
-     names = StringListDict.insert StringListDict.empty (Label.toString lbl) lbl}
+     vals = Dict.insert Dict.empty lbl a}
 
   fun cons (lbl, a) tele = interposeAfter (singleton (lbl, a)) (lbl, tele)
 
@@ -121,14 +109,13 @@ struct
     | snoc NONE (lbl, a) = singleton (lbl, a)
 
   fun map NONE f = NONE
-    | map (SOME {first,last,preds,nexts,vals,names}) f =
+    | map (SOME {first,last,preds,nexts,vals}) f =
         SOME
           {first = first,
           last = last,
           preds = preds,
           nexts = nexts,
-          vals = Dict.map f vals,
-          names = names}
+          vals = Dict.map f vals}
 
   structure SnocView =
   struct
@@ -140,7 +127,7 @@ struct
       | Snoc of 'r * label * 'a
 
     fun out NONE = Empty
-      | out (SOME {first,last,preds,nexts,vals,names}) =
+      | out (SOME {first,last,preds,nexts,vals}) =
           let
             val tail =
               case SOME (Dict.lookup preds last) handle _ => NONE of
@@ -151,8 +138,7 @@ struct
                         last = pred,
                         preds = preds,
                         nexts = nexts,
-                        vals = vals,
-                        names = names}
+                        vals = vals}
           in
             Snoc (tail, last, Dict.lookup vals last)
           end
@@ -171,7 +157,7 @@ struct
       | Cons of label * 'a * 'r
 
     fun out NONE = Empty
-      | out (SOME {first,last,preds,nexts,vals,names}) =
+      | out (SOME {first,last,preds,nexts,vals}) =
           let
             val tail =
               case SOME (Dict.lookup nexts first) handle _ => NONE of
@@ -182,21 +168,19 @@ struct
                        last = last,
                        preds = preds,
                        nexts = nexts,
-                       vals = vals,
-                       names = names}
+                       vals = vals}
           in
             Cons (first, Dict.lookup vals first, tail)
           end
 
     fun outAfter NONE lbl = Empty
-      | outAfter (SOME {first,last,preds,nexts,vals,names}) lbl =
+      | outAfter (SOME {first,last,preds,nexts,vals}) lbl =
          out (SOME
           {first = lbl,
            last = last,
            preds = preds,
            nexts = nexts,
-           vals = vals,
-           names = names})
+           vals = vals})
 
     fun into Empty = empty
       | into (Cons (lbl, a, tele)) = cons (lbl,a) tele
@@ -208,7 +192,7 @@ struct
     fun mapAfter NONE (lbl, f) = NONE
       | mapAfter (SOME tele) (lbl, f) =
           let
-            val {first,last,preds,nexts,vals,names} = tele
+            val {first,last,preds,nexts,vals} = tele
             fun go Empty D = D
               | go (Cons (lbl, a, tele)) D =
                   go (out tele) (Dict.insert D lbl (f (Dict.lookup D lbl)))
@@ -218,8 +202,7 @@ struct
                last = last,
                preds = preds,
                nexts = nexts,
-               vals = go (out (SOME tele)) vals,
-               names = names}
+               vals = go (out (SOME tele)) vals}
           end
 
     fun remove tele lbl =
