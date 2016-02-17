@@ -41,14 +41,14 @@ struct
 
   fun interposeAfter (TEL {first,last,preds,nexts,vals}) (lbl, TEL tele) = TEL
     {first = first,
-     last = case SOME (Dict.lookup nexts lbl) handle _ => NONE of
+     last = case Dict.find nexts lbl of
                  NONE => #last tele
                | SOME lbl' => last,
      preds =
        let
          val preds' = Dict.insert preds (#first tele) lbl
          val preds'' =
-           case SOME (Dict.lookup nexts lbl) handle _ => NONE of
+           case Dict.find nexts lbl of
                 NONE => preds'
               | SOME lblpst => Dict.insert preds' lblpst (#last tele)
        in
@@ -58,7 +58,7 @@ struct
        let
          val nexts' = Dict.insert nexts lbl (#first tele)
          val nexts'' =
-           case SOME (Dict.lookup nexts lbl) handle _ => NONE of
+           case Dict.find nexts lbl of
                 NONE => nexts'
               | SOME lblpst => Dict.insert nexts' (#last tele) lblpst
        in
@@ -97,13 +97,14 @@ struct
 
   fun singleton (lbl, a) =
     TEL
-    {first = lbl,
-     last = lbl,
-     nexts = Dict.empty,
-     preds = Dict.empty,
-     vals = Dict.insert Dict.empty lbl a}
+      {first = lbl,
+       last = lbl,
+       nexts = Dict.empty,
+       preds = Dict.empty,
+       vals = Dict.insert Dict.empty lbl a}
 
-  fun cons lbl a tele = interposeAfter (singleton (lbl, a)) (lbl, tele)
+  fun cons lbl a tele =
+    interposeAfter (singleton (lbl, a)) (lbl, tele)
 
   fun snoc (TEL tele) lbl a = interposeAfter (TEL tele) (#last tele, singleton (lbl, a))
     | snoc NIL lbl a = singleton (lbl, a)
@@ -111,12 +112,12 @@ struct
   fun map f =
     fn NIL => NIL
      | TEL {first,last,preds,nexts,vals} =>
-        TEL
-          {first = first,
-           last = last,
-           preds = preds,
-           nexts = nexts,
-           vals = Dict.map f vals}
+         TEL
+           {first = first,
+            last = last,
+            preds = preds,
+            nexts = nexts,
+            vals = Dict.map f vals}
 
   structure SnocView =
   struct
@@ -131,7 +132,7 @@ struct
       | out (TEL {first,last,preds,nexts,vals}) =
           let
             val tail =
-              case SOME (Dict.lookup preds last) handle _ => NONE of
+              case Dict.find preds last of
                    NONE => NIL
                  | SOME pred =>
                      TEL
@@ -161,7 +162,7 @@ struct
       | out (TEL {first,last,preds,nexts,vals}) =
           let
             val tail =
-              case SOME (Dict.lookup nexts first) handle _ => NONE of
+              case Dict.find nexts first of
                    NONE => NIL
                  | SOME next =>
                      TEL
@@ -226,12 +227,13 @@ struct
   in
     fun search (tele : 'a telescope) phi =
       let
-        fun go EMPTY = NONE
-          | go (SNOC (tele', lbl, a)) =
-              if phi a then
-                SOME (lbl, a)
-              else
-                go (out tele')
+        val rec go =
+          fn EMPTY => NONE
+           | SNOC (tele', lbl, a) =>
+               if phi a then
+                 SOME (lbl, a)
+               else
+                 go (out tele')
       in
         go (out tele)
       end
@@ -247,13 +249,14 @@ end =
 struct
   open T.ConsView
 
-  fun toString pretty tele =
+  fun toString pretty =
     let
-      fun go EMPTY r = r
-        | go (CONS (lbl, a, tele')) r =
-            go (out tele') (r ^ ", " ^ labelToString lbl ^ " : " ^ pretty a)
+      fun go r =
+        fn EMPTY => r
+         | CONS (lbl, a, tele') =>
+            go (r ^ ", " ^ labelToString lbl ^ " : " ^ pretty a) (out tele')
     in
-      go (out tele) "\194\183"
+      go "\194\183" o out
     end
 end
 
