@@ -4,8 +4,8 @@ sig
   type label
 
   datatype ('a, 'r) view =
-       Empty
-     | Snoc of 'r * label * 'a
+       EMPTY
+     | SNOC of 'r * label * 'a
 
   val out : 'a telescope -> ('a, 'a telescope) view
   val into : ('a, 'a telescope) view -> 'a telescope
@@ -17,8 +17,8 @@ sig
   type label
 
   datatype ('a, 'r) view =
-       Empty
-     | Cons of label * 'a * 'r
+       EMPTY
+     | CONS of label * 'a * 'r
 
   val out : 'a telescope -> ('a, 'a telescope) view
   val outAfter : 'a telescope -> label -> ('a, 'a telescope) view
