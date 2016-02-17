@@ -5,7 +5,9 @@ local
   src/telescope.fun
 in
   signature TELESCOPE
+  signature TELESCOPE_COMPARE
   functor Telescope
   functor ShowTelescope
+  functor CompareTelescope
   functor TelescopeNotation
 end

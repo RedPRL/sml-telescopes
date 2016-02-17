@@ -54,10 +54,6 @@ sig
   val foldr : ('a * 'b -> 'b) -> 'b -> 'a telescope -> 'b
   val foldl : ('a * 'b -> 'b) -> 'b -> 'a telescope -> 'b
 
-  (* comparison *)
-  val subtelescope : ('a * 'a -> bool) -> 'a telescope * 'a telescope -> bool
-  val eq : ('a * 'a -> bool) -> 'a telescope * 'a telescope -> bool
-
   (* These views may be used to lazily walk along a telescope *)
   structure SnocView : SNOC_VIEW
     where type 'a telescope = 'a telescope
@@ -66,6 +62,15 @@ sig
   structure ConsView : CONS_VIEW
     where type 'a telescope = 'a telescope
     where type label = label
+end
+
+signature TELESCOPE_COMPARE =
+sig
+  structure E : ORDERED
+  structure T : TELESCOPE
+
+  val eq : E.t T.telescope * E.t T.telescope -> bool
+  val subtelescope : E.t T.telescope * E.t T.telescope -> bool
 end
 
 signature TELESCOPE_NOTATION =

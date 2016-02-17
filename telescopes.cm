@@ -1,8 +1,10 @@
 Library
   signature TELESCOPE
+  signature TELESCOPE_COMPARE
   functor Telescope
   functor ShowTelescope
   functor TelescopeNotation
+  functor CompareTelescope
 is
   $/basis.cm
   lib/cmlib.cm

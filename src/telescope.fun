@@ -235,21 +235,6 @@ struct
       in
         go (out tele)
       end
-
-    fun subtelescope test (t1, t2) =
-      let
-        fun go EMPTY = true
-          | go (SNOC (t1', lbl, a)) =
-              case find t2 lbl of
-                   NONE => false
-                 | SOME a' => test (a, a') andalso go (out t1')
-      in
-        go (out t1)
-      end
-
-    fun eq test (t1, t2) =
-      subtelescope test (t1, t2)
-        andalso subtelescope test (t2, t1)
   end
 end
 
@@ -270,6 +255,31 @@ struct
     in
       go (out tele) "\194\183"
     end
+end
+
+functor CompareTelescope
+  (structure T : TELESCOPE
+   structure E : ORDERED) :> TELESCOPE_COMPARE =
+struct
+  structure T = T and E = E
+  local
+    open T.SnocView
+  in
+    fun subtelescope (t1, t2) =
+      let
+        fun go EMPTY = true
+          | go (SNOC (t1', lbl, a)) =
+              case T.find t2 lbl of
+                   NONE => false
+                 | SOME a' => E.eq (a, a') andalso go (out t1')
+      in
+        go (out t1)
+      end
+
+    fun eq (t1, t2) =
+      subtelescope (t1, t2)
+        andalso subtelescope (t2, t1)
+  end
 end
 
 functor TelescopeNotation (T : TELESCOPE) : TELESCOPE_NOTATION =
