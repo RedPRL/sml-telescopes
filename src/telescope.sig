@@ -36,8 +36,8 @@ sig
 
   (* smart constructors *)
   val empty : 'a telescope
-  val snoc : 'a telescope -> label * 'a -> 'a telescope
-  val cons : label * 'a -> 'a telescope -> 'a telescope
+  val snoc : 'a telescope -> label -> 'a -> 'a telescope
+  val cons : label -> 'a -> 'a telescope -> 'a telescope
 
   val append : 'a telescope * 'a telescope -> 'a telescope
 
@@ -47,10 +47,11 @@ sig
   val search : 'a telescope -> ('a -> bool) -> (label * 'a) option
 
   (* manipulation *)
-  val map : 'a telescope -> ('a -> 'b) -> 'b telescope
-  val mapAfter : 'a telescope -> label * ('a -> 'a) -> 'a telescope
-  val modify : 'a telescope -> label * ('a -> 'a) -> 'a telescope
-  val remove : 'a telescope -> label -> 'a telescope
+  val map : ('a -> 'b) -> 'a telescope -> 'b telescope
+  val modify : label -> ('a -> 'a) -> 'a telescope -> 'a telescope
+  val modifyAfter : label -> ('a -> 'a) -> 'a telescope -> 'a telescope
+  val remove : label -> 'a telescope -> 'a telescope
+
   val interposeAfter : 'a telescope -> label * 'a telescope -> 'a telescope
   val foldr : ('a * 'b -> 'b) -> 'b -> 'a telescope -> 'b
   val foldl : ('a * 'b -> 'b) -> 'b -> 'a telescope -> 'b

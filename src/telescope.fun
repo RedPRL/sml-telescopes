@@ -33,13 +33,13 @@ struct
 
   exception LabelExists
 
-  fun foldr (f : ('a * 'b) -> 'b) (init : 'b) (t as TEL r : 'a telescope) : 'b =
-    Dict.foldr (fn (_,a,b) => f (a,b)) init (#vals r)
-    | foldr f init NIL = init
+  fun foldr f init =
+    fn TEL r => Dict.foldr (fn (_,a,b) => f (a,b)) init (#vals r)
+     | NIL => init
 
-  fun foldl (f : ('a * 'b) -> 'b) (init : 'b) (t as TEL r : 'a telescope) : 'b =
-    Dict.foldl (fn (_,a,b) => f (a,b)) init (#vals r)
-    | foldl f init NIL = init
+  fun foldl f init =
+    fn TEL r => Dict.foldl (fn (_,a,b) => f (a,b)) init (#vals r)
+     | NIL => init
 
   fun interposeAfter (TEL {first,last,preds,nexts,vals}) (lbl, TEL tele) = TEL
     {first = first,
@@ -70,24 +70,24 @@ struct
     | interposeAfter tele (lbl, NIL) = tele
     | interposeAfter NIL (lbl, tele) = tele
 
-
   fun append (NIL, t) = t
     | append (t as TEL {last,...}, t') =
         interposeAfter t (last, t')
 
-  fun modify NIL _ = NIL
-    | modify (TEL {first,last,preds,nexts,vals}) (lbl, f) =
-      let
-        val a = Dict.lookup vals lbl
-        val vals' = Dict.insert vals lbl (f a)
-      in
-        TEL
-          {first = first,
-           last = last,
-           preds = preds,
-           nexts = nexts,
-           vals = vals'}
-      end
+  fun modify lbl f =
+    fn NIL => NIL
+     | TEL {first,last,preds,nexts,vals} =>
+         let
+           val a = Dict.lookup vals lbl
+           val vals' = Dict.insert vals lbl (f a)
+         in
+           TEL
+             {first = first,
+              last = last,
+              preds = preds,
+              nexts = nexts,
+              vals = vals'}
+         end
 
   fun lookup (TEL {vals,...} : 'a telescope) lbl = Dict.lookup vals lbl
     | lookup NIL lbl = raise Fail "Lookup empty"
@@ -105,13 +105,14 @@ struct
      preds = Dict.empty,
      vals = Dict.insert Dict.empty lbl a}
 
-  fun cons (lbl, a) tele = interposeAfter (singleton (lbl, a)) (lbl, tele)
+  fun cons lbl a tele = interposeAfter (singleton (lbl, a)) (lbl, tele)
 
-  fun snoc (TEL tele) (lbl, a) = interposeAfter (TEL tele) (#last tele, singleton (lbl, a))
-    | snoc NIL (lbl, a) = singleton (lbl, a)
+  fun snoc (TEL tele) lbl a = interposeAfter (TEL tele) (#last tele, singleton (lbl, a))
+    | snoc NIL lbl a = singleton (lbl, a)
 
-  fun map NIL f = NIL
-    | map (TEL {first,last,preds,nexts,vals}) f =
+  fun map f =
+    fn NIL => NIL
+     | TEL {first,last,preds,nexts,vals} =>
         TEL
           {first = first,
            last = last,
@@ -146,7 +147,7 @@ struct
           end
 
     fun into Empty = empty
-      | into (Snoc (tel, lbl, a)) = snoc tel (lbl, a)
+      | into (Snoc (tel, lbl, a)) = snoc tel lbl a
   end
 
   structure ConsView =
@@ -185,36 +186,38 @@ struct
            vals = vals})
 
     fun into Empty = empty
-      | into (Cons (lbl, a, tele)) = cons (lbl,a) tele
+      | into (Cons (lbl, a, tele)) = cons lbl a tele
   end
 
   local
     open ConsView
   in
-    fun mapAfter NIL (lbl, f) = NIL
-      | mapAfter (TEL tele) (lbl, f) =
-          let
-            val {first,last,preds,nexts,vals} = tele
-            fun go Empty D = D
-              | go (Cons (lbl, a, tele)) D =
-                  go (out tele) (Dict.insert D lbl (f (Dict.lookup D lbl)))
-          in
-            TEL
-              {first = first,
-               last = last,
-               preds = preds,
-               nexts = nexts,
-               vals = go (out (TEL tele)) vals}
-          end
+    fun modifyAfter lbl f =
+      fn NIL => NIL
+       | TEL (tele as {first,last,preds,nexts,vals}) =>
+           let
+             fun go D =
+               fn Empty => D
+                | Cons (lbl, a, tele) =>
+                    go (Dict.insert D lbl (f (Dict.lookup D lbl))) (out tele)
+           in
+              TEL
+                {first = first,
+                 last = last,
+                 preds = preds,
+                 nexts = nexts,
+                 vals = go vals (out (TEL tele))}
+           end
 
-    fun remove tele lbl =
+    fun remove lbl tele =
       let
-        fun go Empty = into Empty
-          | go (Cons (lbl', a, tele')) =
+        val rec go =
+          fn Empty => empty
+           | Cons (lbl', a, tele') =>
               if Label.eq (lbl, lbl') then
                 go (out tele')
               else
-                into (Cons (lbl', a, go (out tele')))
+                cons lbl' a (go (out tele'))
       in
         go (out tele)
       end
@@ -275,5 +278,5 @@ functor TelescopeNotation (T : TELESCOPE) : TELESCOPE_NOTATION =
 struct
   open T
 
-  fun >: (tele, p) = snoc tele p
+  fun >: (tele, (l, a)) = snoc tele l a
 end
