@@ -66,7 +66,14 @@ sig
     where type label = label
 end
 
-signature TELESCOPE_COMPARE =
+signature SHOW_TELESCOPE =
+sig
+  structure T : TELESCOPE
+
+  val toString : ('a -> string) -> 'a T.telescope -> string
+end
+
+signature COMPARE_TELESCOPE =
 sig
   structure E : ORDERED
   structure T : TELESCOPE

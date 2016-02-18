@@ -245,11 +245,9 @@ end
 
 functor ShowTelescope
   (structure T : TELESCOPE
-   val labelToString : T.label -> string) :>
-sig
-  val toString : ('a -> string) -> 'a T.telescope -> string
-end =
+   val labelToString : T.label -> string) : SHOW_TELESCOPE =
 struct
+  structure T = T
   open T.ConsView
 
   fun toString pretty =
@@ -265,7 +263,7 @@ end
 
 functor CompareTelescope
   (structure T : TELESCOPE
-   structure E : ORDERED) :> TELESCOPE_COMPARE =
+   structure E : ORDERED) : COMPARE_TELESCOPE =
 struct
   structure T = T and E = E
   local

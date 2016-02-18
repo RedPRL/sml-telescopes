@@ -1,6 +1,7 @@
 Library
   signature TELESCOPE
-  signature TELESCOPE_COMPARE
+  signature COMPARE_TELESCOPE
+  signature SHOW_TELESCOPE
   functor Telescope
   functor ShowTelescope
   functor TelescopeNotation
