@@ -21,7 +21,7 @@ sig
      | CONS of label * 'a * 'r
 
   val out : 'a telescope -> ('a, 'a telescope) view
-  val outAfter : 'a telescope -> label -> ('a, 'a telescope) view
+  val outAfter : label -> 'a telescope -> ('a, 'a telescope) view
   val into : ('a, 'a telescope) view -> 'a telescope
 end
 

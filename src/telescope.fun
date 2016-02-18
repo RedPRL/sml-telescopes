@@ -178,14 +178,16 @@ struct
             CONS (first, lookup tel first, tail)
           end
 
-    fun outAfter NIL lbl = EMPTY
-      | outAfter (TEL {first,last,preds,nexts,vals}) lbl =
-         out (TEL
-          {first = lbl,
-           last = last,
-           preds = preds,
-           nexts = nexts,
-           vals = vals})
+    fun outAfter lbl =
+      fn NIL => EMPTY
+       | TEL {first,last,preds,nexts,vals} =>
+         out
+          (TEL
+            {first = lbl,
+             last = last,
+             preds = preds,
+             nexts = nexts,
+             vals = vals})
 
     fun into EMPTY = empty
       | into (CONS (lbl, a, tele)) = cons lbl a tele
@@ -208,7 +210,7 @@ struct
                  last = last,
                  preds = preds,
                  nexts = nexts,
-                 vals = go vals (out (TEL tele))}
+                 vals = go vals (outAfter lbl (TEL tele))}
            end
 
     fun remove lbl tele =
