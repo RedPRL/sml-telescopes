@@ -226,23 +226,25 @@ struct
         go (out tele)
       end
   end
+end
 
-  local
-    open SnocView
-  in
-    fun search (tele : 'a telescope) phi =
-      let
-        val rec go =
-          fn EMPTY => NONE
-           | SNOC (tele', lbl, a) =>
-               if phi a then
-                 SOME (lbl, a)
-               else
-                 go (out tele')
-      in
-        go (out tele)
-      end
-  end
+functor SearchTelescope (T : TELESCOPE) : SEARCH_TELESCOPE =
+struct
+  structure T = T
+  open T.SnocView
+
+  fun search tel phi =
+    let
+      val rec go =
+        fn EMPTY => NONE
+         | SNOC (tele', lbl, a) =>
+             if phi a then
+               SOME (lbl, a)
+             else
+               go (out tele')
+    in
+      go (out tel)
+    end
 end
 
 functor ShowTelescope

@@ -39,10 +39,9 @@ sig
 
   val append : 'a telescope * 'a telescope -> 'a telescope
 
-  (* lookup and search *)
+  (* lookup *)
   val lookup : 'a telescope -> label -> 'a
   val find : 'a telescope -> label -> 'a option
-  val search : 'a telescope -> ('a -> bool) -> (label * 'a) option
 
   exception Absent
 
@@ -80,6 +79,12 @@ sig
 
   val eq : E.t T.telescope * E.t T.telescope -> bool
   val subtelescope : E.t T.telescope * E.t T.telescope -> bool
+end
+
+signature SEARCH_TELESCOPE =
+sig
+  structure T : TELESCOPE
+  val search : 'a T.telescope -> ('a -> bool) -> (T.label * 'a) option
 end
 
 signature TELESCOPE_NOTATION =

@@ -7,8 +7,10 @@ in
   signature TELESCOPE
   signature COMPARE_TELESCOPE
   signature SHOW_TELESCOPE
+  signature SEARCH_TELESCOPE
   functor Telescope
   functor ShowTelescope
   functor CompareTelescope
+  functor SearchTelescope
   functor TelescopeNotation
 end
