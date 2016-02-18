@@ -4,8 +4,8 @@ sig
   type label
 
   datatype ('a, 'r) view =
-       Empty
-     | Snoc of 'r * label * 'a
+       EMPTY
+     | SNOC of 'r * label * 'a
 
   val out : 'a telescope -> ('a, 'a telescope) view
   val into : ('a, 'a telescope) view -> 'a telescope
@@ -17,59 +17,43 @@ sig
   type label
 
   datatype ('a, 'r) view =
-       Empty
-     | Cons of label * 'a * 'r
+       EMPTY
+     | CONS of label * 'a * 'r
 
   val out : 'a telescope -> ('a, 'a telescope) view
-  val outAfter : 'a telescope -> label -> ('a, 'a telescope) view
+  val outAfter : label -> 'a telescope -> ('a, 'a telescope) view
   val into : ('a, 'a telescope) view -> 'a telescope
-end
-
-signature LABEL =
-sig
-  include ORDERED
-
-  val toString : t -> string
-  val prime : t -> t
 end
 
 signature TELESCOPE =
 sig
   type 'a telescope
 
-  structure Label : LABEL
+  structure Label : ORDERED
   type label = Label.t
-
-  exception LabelExists
 
   (* smart constructors *)
   val empty : 'a telescope
-  val snoc : 'a telescope -> label * 'a -> 'a telescope
-  val cons : label * 'a -> 'a telescope -> 'a telescope
+  val snoc : 'a telescope -> label -> 'a -> 'a telescope
+  val cons : label -> 'a -> 'a telescope -> 'a telescope
 
-  val fresh : 'a telescope * label -> label
   val append : 'a telescope * 'a telescope -> 'a telescope
 
-  (* lookup and search *)
+  (* lookup *)
   val lookup : 'a telescope -> label -> 'a
   val find : 'a telescope -> label -> 'a option
-  val search : 'a telescope -> ('a -> bool) -> (label * 'a) option
+
+  exception Absent
 
   (* manipulation *)
-  val map : 'a telescope -> ('a -> 'b) -> 'b telescope
-  val mapAfter : 'a telescope -> label * ('a -> 'a) -> 'a telescope
-  val modify : 'a telescope -> label * ('a -> 'a) -> 'a telescope
-  val remove : 'a telescope -> label -> 'a telescope
+  val map : ('a -> 'b) -> 'a telescope -> 'b telescope
+  val modify : label -> ('a -> 'a) -> 'a telescope -> 'a telescope
+  val modifyAfter : label -> ('a -> 'a) -> 'a telescope -> 'a telescope
+  val remove : label -> 'a telescope -> 'a telescope
   val interposeAfter : 'a telescope -> label * 'a telescope -> 'a telescope
+
   val foldr : ('a * 'b -> 'b) -> 'b -> 'a telescope -> 'b
   val foldl : ('a * 'b -> 'b) -> 'b -> 'a telescope -> 'b
-
-  (* comparison *)
-  val subtelescope : ('a * 'a -> bool) -> 'a telescope * 'a telescope -> bool
-  val eq : ('a * 'a -> bool) -> 'a telescope * 'a telescope -> bool
-
-  (* pretty printing *)
-  val toString : ('a -> string) -> 'a telescope -> string
 
   (* These views may be used to lazily walk along a telescope *)
   structure SnocView : SNOC_VIEW
@@ -79,6 +63,28 @@ sig
   structure ConsView : CONS_VIEW
     where type 'a telescope = 'a telescope
     where type label = label
+end
+
+signature SHOW_TELESCOPE =
+sig
+  structure T : TELESCOPE
+
+  val toString : ('a -> string) -> 'a T.telescope -> string
+end
+
+signature COMPARE_TELESCOPE =
+sig
+  structure E : ORDERED
+  structure T : TELESCOPE
+
+  val eq : E.t T.telescope * E.t T.telescope -> bool
+  val subtelescope : E.t T.telescope * E.t T.telescope -> bool
+end
+
+signature SEARCH_TELESCOPE =
+sig
+  structure T : TELESCOPE
+  val search : 'a T.telescope -> ('a -> bool) -> (T.label * 'a) option
 end
 
 signature TELESCOPE_NOTATION =
