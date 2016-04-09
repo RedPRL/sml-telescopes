@@ -294,6 +294,7 @@ functor UnifyTelescope
   (structure T : TELESCOPE
    structure Tm : ORDERED
    structure Ren : DICT where type key = T.label
+   val unifyTerm : Tm.t * Tm.t -> T.label Ren.dict option
    val rename : T.label Ren.dict -> Tm.t -> Tm.t) : UNIFY_TELESCOPE =
 struct
   structure T = T
@@ -304,22 +305,50 @@ struct
 
   open T.ConsView
 
-  fun unify (t1, t2) =
+  fun renUnion rho1 rho2 =
+    Ren.union rho1 rho2 (fn (_, x, y) =>
+      if T.Label.eq (x, y) then
+        x
+      else
+        raise UnificationFailed)
+
+  fun unifyEq (t1, t2) =
     let
       fun go rho =
         fn (EMPTY, EMPTY) => rho
          | (CONS (l1, a1, t1'), CONS (l2, a2, t2')) =>
-            if Tm.eq (a1, rename rho a2) then
-              go (Ren.insert rho l2 l1) (out t1', out t2')
-            else
-              raise UnificationFailed
+             (case unifyTerm (a1, rename rho a2) of
+                 SOME rho' =>
+                   go (renUnion (Ren.insert rho l2 l1) rho') (out t1', out t2')
+               | NONE => raise UnificationFailed)
          | _ => raise UnificationFailed
     in
       go Ren.empty (out t1, out t2)
     end
 
-  fun unifyOpt (t1, t2) =
-    SOME (unify (t1, t2) )
+  fun unifySub (t1, t2) =
+    let
+      fun go rho =
+        fn (CONS (l1, a1, t1'), CONS (l2, a2, t2')) =>
+             let
+               val rho' = Ren.insert rho l2 l1
+             in
+               case unifyTerm (a1, rename rho a2) of
+                   SOME rho'' => go (renUnion rho' rho'') (out t1', out t2')
+                 | NONE => go rho' (CONS (l1, a1, t1'), out t2')
+             end
+         | (EMPTY, _) => rho
+         | (_, EMPTY) => raise UnificationFailed
+    in
+      go Ren.empty (out t1, out t2)
+    end
+
+  fun unifyEqOpt (t1, t2) =
+    SOME (unifyEq (t1, t2) )
+    handle UnificationFailed => NONE
+
+  fun unifySubOpt (t1, t2) =
+    SOME (unifySub (t1, t2) )
     handle UnificationFailed => NONE
 
 end
