@@ -292,13 +292,13 @@ end
 
 functor UnifyTelescope
   (structure T : TELESCOPE
-   structure Tm : ORDERED
+   type term
    structure Ren : DICT where type key = T.label
-   val unifyTerm : Tm.t * Tm.t -> T.label Ren.dict option
-   val rename : T.label Ren.dict -> Tm.t -> Tm.t) : UNIFY_TELESCOPE =
+   val unifyTerm : term * term -> T.label Ren.dict option
+   val rename : T.label Ren.dict -> term -> term) : UNIFY_TELESCOPE =
 struct
   structure T = T
-  type term = Tm.t
+  type term = term
   type ren = T.label Ren.dict
 
   exception UnificationFailed
