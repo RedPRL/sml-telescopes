@@ -318,6 +318,10 @@ struct
       go Ren.empty (out t1, out t2)
     end
 
+  fun unifyOpt (t1, t2) =
+    SOME (unify (t1, t2) )
+    handle UnificationFailed => NONE
+
 end
 
 functor TelescopeNotation (T : TELESCOPE) : TELESCOPE_NOTATION =
