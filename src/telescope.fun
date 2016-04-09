@@ -346,10 +346,12 @@ struct
   fun unifyEqOpt (t1, t2) =
     SOME (unifyEq (t1, t2) )
     handle UnificationFailed => NONE
+         | e => raise e
 
   fun unifySubOpt (t1, t2) =
     SOME (unifySub (t1, t2) )
     handle UnificationFailed => NONE
+         | e => raise e
 
 end
 
