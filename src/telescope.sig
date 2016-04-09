@@ -91,7 +91,7 @@ sig
 
   (* alpha-equivalence of telescopes; throws [UnificationFailed]
    * if the telescopes do not unify. When [unify (t1, t2)] ==> [rho],
-   * this means that [rho*t2] == [t1]. *)
+   * this means that [rho*t1] == [t2]. *)
   val unifyEq : term T.telescope * term T.telescope -> ren
 
   (* alpha-subtelescoping *)

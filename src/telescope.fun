@@ -317,9 +317,9 @@ struct
       fun go rho =
         fn (EMPTY, EMPTY) => rho
          | (CONS (l1, a1, t1'), CONS (l2, a2, t2')) =>
-             (case unifyTerm (a1, rename rho a2) of
+             (case unifyTerm (rename rho a1, a2) of
                  SOME rho' =>
-                   go (renUnion (Ren.insert rho l2 l1) rho') (out t1', out t2')
+                   go (renUnion (Ren.insert rho l1 l2) rho') (out t1', out t2')
                | NONE => raise UnificationFailed)
          | _ => raise UnificationFailed
     in
@@ -331,9 +331,9 @@ struct
       fun go rho =
         fn (CONS (l1, a1, t1'), CONS (l2, a2, t2')) =>
              let
-               val rho' = Ren.insert rho l2 l1
+               val rho' = Ren.insert rho l1 l2
              in
-               case unifyTerm (a1, rename rho a2) of
+               case unifyTerm (rename rho a1, a2) of
                    SOME rho'' => go (renUnion rho' rho'') (out t1', out t2')
                  | NONE => go rho' (CONS (l1, a1, t1'), out t2')
              end
