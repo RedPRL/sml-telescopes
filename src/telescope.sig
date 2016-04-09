@@ -77,8 +77,23 @@ sig
   structure E : ORDERED
   structure T : TELESCOPE
 
+  (* exact equality, does not respect alpha equivalence *)
   val eq : E.t T.telescope * E.t T.telescope -> bool
   val subtelescope : E.t T.telescope * E.t T.telescope -> bool
+end
+
+signature UNIFY_TELESCOPE =
+sig
+  structure T : TELESCOPE
+
+  type term
+  type ren
+
+  (* alpha-equivalence of telescopes; throws [UnificationFailed]
+   * if the telescopes do not unify. *)
+  val unify : term T.telescope * term T.telescope -> ren
+
+  exception UnificationFailed
 end
 
 signature SEARCH_TELESCOPE =

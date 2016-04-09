@@ -290,6 +290,36 @@ struct
   end
 end
 
+functor UnifyTelescope
+  (structure T : TELESCOPE
+   structure Tm : ORDERED
+   structure Ren : DICT where type key = T.label
+   val rename : T.label Ren.dict -> Tm.t -> Tm.t) : UNIFY_TELESCOPE =
+struct
+  structure T = T
+  type term = Tm.t
+  type ren = T.label Ren.dict
+
+  exception UnificationFailed
+
+  open T.ConsView
+
+  fun unify (t1, t2) =
+    let
+      fun go rho =
+        fn (EMPTY, EMPTY) => rho
+         | (CONS (l1, a1, t1'), CONS (l2, a2, t2')) =>
+            if Tm.eq (a1, rename rho a2) then
+              go (Ren.insert rho l2 l1) (out t1', out t2')
+            else
+              raise UnificationFailed
+         | _ => raise UnificationFailed
+    in
+      go Ren.empty (out t1, out t2)
+    end
+
+end
+
 functor TelescopeNotation (T : TELESCOPE) : TELESCOPE_NOTATION =
 struct
   open T
