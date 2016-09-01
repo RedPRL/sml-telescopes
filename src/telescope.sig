@@ -39,7 +39,7 @@ sig
 
   val singleton : label -> 'a -> 'a telescope
 
-  val append : 'a telescope * 'a telescope -> 'a telescope
+  val append : 'a telescope -> 'a telescope -> 'a telescope
 
   (* lookup *)
   val lookup : 'a telescope -> label -> 'a
@@ -55,6 +55,10 @@ sig
 
   val splice : 'a telescope -> label -> 'a telescope -> 'a telescope
   val interposeAfter : 'a telescope -> label -> 'a telescope -> 'a telescope
+
+  (* removes every element of the telescope, starting at the provided label *)
+  val truncateFrom : 'a telescope -> label -> 'a telescope
+  val dropUntil : 'a telescope -> label -> 'a telescope
 
   val foldr : ('a * 'b -> 'b) -> 'b -> 'a telescope -> 'b
   val foldl : ('a * 'b -> 'b) -> 'b -> 'a telescope -> 'b

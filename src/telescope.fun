@@ -3,6 +3,7 @@ struct
   datatype merge_policy = DISJOINT | OVERWRITE
 
   exception DictsNotDisjoint
+
   fun mergeDict policy (d1, d2) =
     Dict.foldl (fn (a, b, d3) =>
       case policy of
@@ -16,220 +17,171 @@ end
 
 functor Telescope (L : ORDERED) :> TELESCOPE where type Label.t = L.t =
 struct
-  type label = L.t
   structure Label = L
+  structure D = SplayDict (structure Key = L)
+  structure MergeDict = MergeDict (D)
 
-  structure Dict = SplayDict(structure Key = L)
-  structure MergeDict = MergeDict (Dict)
-
-  datatype 'a telescope =
-      TEL of
-        {first : L.t,
-         last : L.t,
-         preds : L.t Dict.dict,
-         nexts : L.t Dict.dict,
-         vals : 'a Dict.dict}
-    | NIL
-
-  fun foldr f init =
-    fn TEL r => Dict.foldr (fn (_,a,b) => f (a,b)) init (#vals r)
-     | NIL => init
-
-  fun foldl f init =
-    fn TEL r => Dict.foldl (fn (_,a,b) => f (a,b)) init (#vals r)
-     | NIL => init
-
-  fun interposeAfter (TEL {first,last,preds,nexts,vals}) lbl (TEL tele) = TEL
-    {first = first,
-     last = case Dict.find nexts lbl of
-                 NONE => #last tele
-               | SOME lbl' => last,
-     preds =
-       let
-         val preds' = Dict.insert preds (#first tele) lbl
-         val preds'' =
-           case Dict.find nexts lbl of
-                NONE => preds'
-              | SOME lblpst => Dict.insert preds' lblpst (#last tele)
-       in
-         MergeDict.mergeDict MergeDict.DISJOINT (#preds tele, preds'')
-       end,
-     nexts =
-       let
-         val nexts' = Dict.insert nexts lbl (#first tele)
-         val nexts'' =
-           case Dict.find nexts lbl of
-                NONE => nexts'
-              | SOME lblpst => Dict.insert nexts' (#last tele) lblpst
-       in
-         MergeDict.mergeDict MergeDict.DISJOINT (#nexts tele, nexts'')
-       end,
-     vals = MergeDict.mergeDict MergeDict.DISJOINT (vals, #vals tele)}
-    | interposeAfter tele lbl NIL = tele
-    | interposeAfter NIL lbl tele = tele
-
-  fun append (NIL, t) = t
-    | append (t as TEL {last,...}, t') =
-        interposeAfter t last t'
+  type label = L.t
 
   exception Absent
 
-  fun lookup (TEL {vals,...}) lbl = (Dict.lookup vals lbl handle _ => raise Absent)
-    | lookup NIL lbl = raise Absent
-
-  fun find (TEL {vals,...}) lbl = Dict.find vals lbl
-    | find _ _ = NONE
-
-  fun modify lbl f =
-    fn NIL => NIL
-     | tel as TEL {first,last,preds,nexts,vals} =>
-         let
-           val a = lookup tel lbl
-           val vals' = Dict.insert vals lbl (f a)
-         in
-           TEL
-             {first = first,
-              last = last,
-              preds = preds,
-              nexts = nexts,
-              vals = vals'}
-         end
-
-
-  val empty = NIL
-
-  fun singleton lbl a =
-    TEL
-      {first = lbl,
-       last = lbl,
-       nexts = Dict.empty,
-       preds = Dict.empty,
-       vals = Dict.insert Dict.empty lbl a}
-
-  fun cons lbl a tele =
-    interposeAfter (singleton lbl a) lbl tele
-
-  fun snoc (TEL tele) lbl = interposeAfter (TEL tele) (#last tele) o singleton lbl
-    | snoc NIL lbl = singleton lbl
-
-  fun map f =
-    fn NIL => NIL
-     | TEL {first,last,preds,nexts,vals} =>
-         TEL
-           {first = first,
-            last = last,
-            preds = preds,
-            nexts = nexts,
-            vals = Dict.map f vals}
-
-  structure SnocView =
+  structure Internal =
   struct
-    type 'a telescope = 'a telescope
-    type label = label
+    type 'a telescope = L.t list * 'a D.dict
 
-    datatype ('a, 'r) view =
-        EMPTY
-      | SNOC of 'r * label * 'a
+    val empty = ([], D.empty)
 
-    fun out NIL = EMPTY
-      | out (tel as TEL {first,last,preds,nexts,vals}) =
-          let
-            val tail =
-              case Dict.find preds last of
-                   NONE => NIL
-                 | SOME pred =>
-                     TEL
-                       {first = first,
-                        last = pred,
-                        preds = preds,
-                        nexts = nexts,
-                        vals = vals}
-          in
-            SNOC (tail, last, lookup tel last)
-          end
+    fun snoc (list, dict) lbl x =
+      if D.member dict lbl then
+        raise MergeDict.DictsNotDisjoint
+      else
+        (lbl :: list, D.insert dict lbl x)
 
-    fun into EMPTY = empty
-      | into (SNOC (tel, lbl, a)) = snoc tel lbl a
-  end
+    fun cons lbl x (list, dict) =
+      if D.member dict lbl then
+        raise MergeDict.DictsNotDisjoint
+      else
+        (list @ [lbl], D.insert dict lbl x)
 
-  structure ConsView =
-  struct
-    type 'a telescope = 'a telescope
-    type label = label
-
-    datatype ('a, 'r) view =
-        EMPTY
-      | CONS of label * 'a * 'r
-
-    fun out NIL = EMPTY
-      | out (tel as TEL {first,last,preds,nexts,vals}) =
-          let
-            val tail =
-              case Dict.find nexts first of
-                   NONE => NIL
-                 | SOME next =>
-                     TEL
-                      {first = next,
-                       last = last,
-                       preds = preds,
-                       nexts = nexts,
-                       vals = vals}
-          in
-            CONS (first, lookup tel first, tail)
-          end
-
-    fun outAfter lbl =
-      fn NIL => EMPTY
-       | TEL {first,last,preds,nexts,vals} =>
-         out
-          (TEL
-            {first = lbl,
-             last = last,
-             preds = preds,
-             nexts = nexts,
-             vals = vals})
-
-    fun into EMPTY = empty
-      | into (CONS (lbl, a, tele)) = cons lbl a tele
-  end
-
-  local
-    open ConsView
-  in
-    fun modifyAfter lbl f =
-      fn NIL => NIL
-       | TEL (tele as {first,last,preds,nexts,vals}) =>
-           let
-             fun go D =
-               fn EMPTY => D
-                | CONS (lbl, a, tele) =>
-                    go (Dict.insert D lbl (f (Dict.lookup D lbl handle _ => raise Absent))) (out tele)
-           in
-              TEL
-                {first = first,
-                 last = last,
-                 preds = preds,
-                 nexts = nexts,
-                 vals = go vals (outAfter lbl (TEL tele))}
-           end
-
-    fun remove lbl tele =
+    fun append (list1, dict1) (list2, dict2) =
       let
-        val rec go =
-          fn EMPTY => empty
-           | CONS (lbl', a, tele') =>
-              if Label.eq (lbl, lbl') then
-                go (out tele')
-              else
-                cons lbl' a (go (out tele'))
+        val dict = MergeDict.mergeDict MergeDict.DISJOINT (dict1, dict2)
       in
-        go (out tele)
+        (list2 @ list1, dict)
       end
 
-    fun splice t1 lbl =
-      remove lbl o interposeAfter t1 lbl
+    fun lookup (list, dict) lbl =
+      D.lookup dict lbl handle _ => raise Absent
 
+    fun find (list, dict) lbl =
+      D.find dict lbl
+
+    fun map f (list, dict) =
+      (list, D.map f dict)
+
+    fun modify lbl f (list, dict) =
+      let
+        val (_, _, dict') = D.operate dict lbl (fn _ => raise Absent) f
+      in
+        (list, dict')
+      end
+
+    fun modifyAfter lbl f (list, dict) =
+      let
+        fun go [] dict = dict
+          | go (l :: ls) dict =
+              if L.eq (l, lbl) then
+                dict
+              else
+                let
+                  val a = D.lookup dict l
+                  val a' = f a
+                in
+                  go ls (D.insert dict l a')
+                end
+
+      in
+        (list, go list dict)
+      end
+
+    fun remove lbl (list, dict) =
+      (List.filter (fn l => not (L.eq (l, lbl))) list,
+       D.remove dict lbl)
+
+    fun splitList x =
+      let
+        fun go xs [] = (xs, [])
+          | go xs (y :: ys) =
+              if L.eq (y, x) then
+                (xs, ys)
+              else
+                go (y :: xs) ys
+      in
+        go []
+      end
+
+    fun splice (list, dict) x (listx, dictx) =
+      let
+        val dict' = MergeDict.mergeDict MergeDict.DISJOINT (D.remove dict x, dictx)
+        val (xs, ys) = splitList x list
+      in
+        (List.rev xs @ listx @ ys, dict')
+      end
+
+    fun truncateFrom (ys, dict) y =
+      let
+        val (xs, zs) = splitList y ys
+      in
+        (zs, List.foldl (fn (x, dict') => D.remove dict' x) dict xs)
+      end
+
+    fun dropUntil (ys, dict) y =
+      let
+        val (xs, zs) = splitList y ys
+      in
+        (xs, List.foldl (fn (z, dict') => D.remove dict' z) dict zs)
+      end
+
+    fun foldr alg z (list, dict) =
+      List.foldl (fn (x, b) => alg (D.lookup dict x, b)) z list
+
+    fun foldl alg z (list, dict) =
+      List.foldr (fn (x, b) => alg (D.lookup dict x, b)) z list
+
+    structure ConsView =
+    struct
+      type 'a telescope = 'a telescope
+      type label = label
+
+      datatype ('a, 'r) view =
+          EMPTY
+        | CONS of label * 'a * 'r
+
+      val into =
+        fn EMPTY => empty
+         | CONS (lbl, a, r) => cons lbl a r
+
+      val out =
+        fn ([], _) => EMPTY
+         | (xs as _ ::_, dict) =>
+             let
+               val x = List.last xs
+               val a = D.lookup dict x
+             in
+               CONS (x, a, (List.take (xs, List.length xs - 1), D.remove dict x))
+             end
+
+      fun outAfter x t =
+        out (dropUntil t x)
+    end
+
+    structure SnocView =
+    struct
+      type 'a telescope = 'a telescope
+      type label = label
+
+      datatype ('a, 'r) view =
+           EMPTY
+         | SNOC of 'r * label * 'a
+
+      val out =
+        fn ([], _) => EMPTY
+         | (x :: xs, dict) => SNOC ((xs, D.remove dict x), x, D.lookup dict x)
+
+      val into =
+        fn EMPTY => empty
+         | SNOC (r, x, a) => snoc r x a
+    end
   end
+
+  open Internal
+
+  fun singleton lbl x =
+    cons lbl x empty
+
+  fun interposeAfter t x t' =
+    splice t x (cons x (lookup t x) t')
+
 end
 
 functor SearchTelescope (T : TELESCOPE) : SEARCH_TELESCOPE =
