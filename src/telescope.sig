@@ -37,6 +37,8 @@ sig
   val snoc : 'a telescope -> label -> 'a -> 'a telescope
   val cons : label -> 'a -> 'a telescope -> 'a telescope
 
+  val singleton : label -> 'a -> 'a telescope
+
   val append : 'a telescope * 'a telescope -> 'a telescope
 
   (* lookup *)
@@ -50,7 +52,9 @@ sig
   val modify : label -> ('a -> 'a) -> 'a telescope -> 'a telescope
   val modifyAfter : label -> ('a -> 'a) -> 'a telescope -> 'a telescope
   val remove : label -> 'a telescope -> 'a telescope
-  val interposeAfter : 'a telescope -> label * 'a telescope -> 'a telescope
+
+  val splice : 'a telescope -> label -> 'a telescope -> 'a telescope
+  val interposeAfter : 'a telescope -> label -> 'a telescope -> 'a telescope
 
   val foldr : ('a * 'b -> 'b) -> 'b -> 'a telescope -> 'b
   val foldl : ('a * 'b -> 'b) -> 'b -> 'a telescope -> 'b

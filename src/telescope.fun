@@ -39,7 +39,7 @@ struct
     fn TEL r => Dict.foldl (fn (_,a,b) => f (a,b)) init (#vals r)
      | NIL => init
 
-  fun interposeAfter (TEL {first,last,preds,nexts,vals}) (lbl, TEL tele) = TEL
+  fun interposeAfter (TEL {first,last,preds,nexts,vals}) lbl (TEL tele) = TEL
     {first = first,
      last = case Dict.find nexts lbl of
                  NONE => #last tele
@@ -65,12 +65,12 @@ struct
          MergeDict.mergeDict MergeDict.DISJOINT (#nexts tele, nexts'')
        end,
      vals = MergeDict.mergeDict MergeDict.DISJOINT (vals, #vals tele)}
-    | interposeAfter tele (lbl, NIL) = tele
-    | interposeAfter NIL (lbl, tele) = tele
+    | interposeAfter tele lbl NIL = tele
+    | interposeAfter NIL lbl tele = tele
 
   fun append (NIL, t) = t
     | append (t as TEL {last,...}, t') =
-        interposeAfter t (last, t')
+        interposeAfter t last t'
 
   exception Absent
 
@@ -98,7 +98,7 @@ struct
 
   val empty = NIL
 
-  fun singleton (lbl, a) =
+  fun singleton lbl a =
     TEL
       {first = lbl,
        last = lbl,
@@ -107,10 +107,10 @@ struct
        vals = Dict.insert Dict.empty lbl a}
 
   fun cons lbl a tele =
-    interposeAfter (singleton (lbl, a)) (lbl, tele)
+    interposeAfter (singleton lbl a) lbl tele
 
-  fun snoc (TEL tele) lbl a = interposeAfter (TEL tele) (#last tele, singleton (lbl, a))
-    | snoc NIL lbl a = singleton (lbl, a)
+  fun snoc (TEL tele) lbl = interposeAfter (TEL tele) (#last tele) o singleton lbl
+    | snoc NIL lbl = singleton lbl
 
   fun map f =
     fn NIL => NIL
@@ -225,6 +225,10 @@ struct
       in
         go (out tele)
       end
+
+    fun splice t1 lbl =
+      remove lbl o interposeAfter t1 lbl
+
   end
 end
 
