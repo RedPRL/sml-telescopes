@@ -32,6 +32,8 @@ sig
   structure Label : ORDERED
   type label = Label.t
 
+  val isEmpty : 'a telescope -> bool
+
   (* smart constructors *)
   val empty : 'a telescope
   val snoc : 'a telescope -> label -> 'a -> 'a telescope

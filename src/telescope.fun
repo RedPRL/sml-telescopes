@@ -29,6 +29,10 @@ struct
   struct
     type 'a telescope = L.t list * 'a D.dict
 
+    val isEmpty =
+      fn ([], _) => true
+       | _ => false
+
     val empty = ([], D.empty)
 
     fun snoc (list, dict) lbl x =
