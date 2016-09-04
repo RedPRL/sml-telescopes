@@ -1,0 +1,4 @@
+Group is
+  lib/cmlib/cmlib.cm
+  telescopes.cm
+  test/test.sml
