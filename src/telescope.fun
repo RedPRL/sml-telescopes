@@ -109,18 +109,24 @@ struct
       end
 
     fun truncateFrom (ys, dict) y =
-      let
-        val (xs, zs) = splitList y ys
-      in
-        (zs, List.foldl (fn (x, dict') => D.remove dict' x) dict xs)
-      end
+      if D.member dict y then
+        let
+          val (xs, zs) = splitList y ys
+        in
+          (zs, List.foldl (fn (x, dict') => D.remove dict' x) dict xs)
+        end
+      else
+        (ys, dict)
 
     fun dropUntil (ys, dict) y =
-      let
-        val (xs, zs) = splitList y ys
-      in
-        (xs, List.foldl (fn (z, dict') => D.remove dict' z) dict zs)
-      end
+      if D.member dict y then
+        let
+          val (xs, zs) = splitList y ys
+        in
+          (xs, List.foldl (fn (z, dict') => D.remove dict' z) dict zs)
+        end
+      else
+        (ys, dict)
 
     fun foldr alg z (list, dict) =
       List.foldl (fn (x, b) => alg (D.lookup dict x, b)) z list

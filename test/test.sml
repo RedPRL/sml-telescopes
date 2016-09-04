@@ -21,11 +21,14 @@ struct
 
   val _ =
     let
-      val tele = empty >: ("1", 1) >: ("2", 2) >: ("3",3)
+      val tele = empty >: ("1", 1) >: ("2", 2) >: ("3",3) >: ("4",4)
+      val tele' = empty >: ("1", 1) >: ("2",2)
     in
       assert "refl" @@ eq (tele, tele);
-      assert "foldr" @@ T.foldr op:: [] tele = [1,2,3];
-      assert "foldl" @@ T.foldl op:: [] tele = [3,2,1]
+      assert "foldr" @@ T.foldr op:: [] tele = [1,2,3,4];
+      assert "foldl" @@ T.foldl op:: [] tele = [4,3,2,1];
+      assert "truncateFrom" @@ eq (truncateFrom tele "3", tele');
+      assert "truncateFrom/not-a-key" @@ eq (truncateFrom tele "not-a-key", tele)
     end
 
 end
