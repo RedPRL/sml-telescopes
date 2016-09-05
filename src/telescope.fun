@@ -133,10 +133,10 @@ struct
         (ys, dict)
 
     fun foldr alg z (list, dict) =
-      List.foldl (fn (x, b) => alg (D.lookup dict x, b)) z list
+      List.foldl (fn (x, b) => alg (x, D.lookup dict x, b)) z list
 
     fun foldl alg z (list, dict) =
-      List.foldr (fn (x, b) => alg (D.lookup dict x, b)) z list
+      List.foldr (fn (x, b) => alg (x, D.lookup dict x, b)) z list
 
     structure ConsView =
     struct

@@ -4,8 +4,8 @@ sig
   type label
 
   datatype ('a, 'r) view =
-       EMPTY
-     | SNOC of 'r * label * 'a
+     EMPTY
+   | SNOC of 'r * label * 'a
 
   val out : 'a telescope -> ('a, 'a telescope) view
   val into : ('a, 'a telescope) view -> 'a telescope
@@ -17,8 +17,8 @@ sig
   type label
 
   datatype ('a, 'r) view =
-       EMPTY
-     | CONS of label * 'a * 'r
+     EMPTY
+   | CONS of label * 'a * 'r
 
   val out : 'a telescope -> ('a, 'a telescope) view
   val outAfter : label -> 'a telescope -> ('a, 'a telescope) view
@@ -62,8 +62,8 @@ sig
   val truncateFrom : 'a telescope -> label -> 'a telescope
   val dropUntil : 'a telescope -> label -> 'a telescope
 
-  val foldr : ('a * 'b -> 'b) -> 'b -> 'a telescope -> 'b
-  val foldl : ('a * 'b -> 'b) -> 'b -> 'a telescope -> 'b
+  val foldr : (label * 'a * 'b -> 'b) -> 'b -> 'a telescope -> 'b
+  val foldl : (label * 'a * 'b -> 'b) -> 'b -> 'a telescope -> 'b
 
   (* These views may be used to lazily walk along a telescope *)
   structure SnocView : SNOC_VIEW
