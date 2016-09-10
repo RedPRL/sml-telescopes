@@ -25,11 +25,17 @@ sig
   val into : ('a, 'a telescope) view -> 'a telescope
 end
 
+signature TELESCOPE_LABEL =
+sig
+  include ORDERED
+  val toString : t -> string
+end
+
 signature TELESCOPE =
 sig
   type 'a telescope
 
-  structure Label : ORDERED
+  structure Label : TELESCOPE_LABEL
   type label = Label.t
 
   val isEmpty : 'a telescope -> bool

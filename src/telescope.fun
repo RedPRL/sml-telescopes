@@ -1,25 +1,7 @@
-functor MergeDict (Dict : DICT) =
-struct
-  datatype merge_policy = DISJOINT | OVERWRITE
-
-  exception DictsNotDisjoint
-
-  fun mergeDict policy (d1, d2) =
-    Dict.foldl (fn (a, b, d3) =>
-      case policy of
-           OVERWRITE => Dict.insert d3 a b
-         | DISJOINT =>
-             (case Dict.find d3 a of
-                  NONE => Dict.insert d3 a b
-                | SOME _ => raise DictsNotDisjoint)
-    ) d2 d1
-end
-
-functor Telescope (L : ORDERED) :> TELESCOPE where type Label.t = L.t =
+functor Telescope (L : TELESCOPE_LABEL) :> TELESCOPE where type Label.t = L.t =
 struct
   structure Label = L
   structure D = SplayDict (structure Key = L)
-  structure MergeDict = MergeDict (D)
 
   type label = L.t
 
@@ -37,19 +19,19 @@ struct
 
     fun snoc (list, dict) lbl x =
       if D.member dict lbl then
-        raise MergeDict.DictsNotDisjoint
+        raise Fail ("snoc: duplicates " ^ L.toString lbl)
       else
         (lbl :: list, D.insert dict lbl x)
 
     fun cons lbl x (list, dict) =
       if D.member dict lbl then
-        raise MergeDict.DictsNotDisjoint
+        raise Fail ("cons: duplicates " ^ L.toString lbl)
       else
         (list @ [lbl], D.insert dict lbl x)
 
     fun append (list1, dict1) (list2, dict2) =
       let
-        val dict = MergeDict.mergeDict MergeDict.DISJOINT (dict1, dict2)
+        val dict = D.union dict1 dict2 (fn (l, _, _) => raise Fail ("append: duplicates " ^ L.toString l))
       in
         (list2 @ list1, dict)
       end
@@ -106,7 +88,7 @@ struct
 
     fun splice (list, dict) x (listx, dictx) =
       let
-        val dict' = MergeDict.mergeDict MergeDict.DISJOINT (D.remove dict x, dictx)
+        val dict' = D.union (D.remove dict x) dictx (fn (l, _, _) => raise Fail ("splice: duplicates " ^ L.toString l))
         val (xs, ys) = splitList x list
       in
         (List.rev xs @ listx @ ys, dict')
@@ -213,9 +195,7 @@ struct
     end
 end
 
-functor ShowTelescope
-  (structure T : TELESCOPE
-   val labelToString : T.label -> string) : SHOW_TELESCOPE =
+functor ShowTelescope (T : TELESCOPE) : SHOW_TELESCOPE =
 struct
   structure T = T
   open T.ConsView
@@ -225,7 +205,7 @@ struct
       fun go r =
         fn EMPTY => r
          | CONS (lbl, a, tele') =>
-            go (r ^ ", " ^ labelToString lbl ^ " : " ^ pretty a) (out tele')
+            go (r ^ ", " ^ T.Label.toString lbl ^ " : " ^ pretty a) (out tele')
     in
       go "\194\183" o out
     end
