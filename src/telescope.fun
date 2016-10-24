@@ -174,15 +174,34 @@ struct
   fun interposeAfter t x t' =
     splice t x (cons x (lookup t x) t')
 
+  local
+    open SnocView
+  in
+    fun subtelescope f (t1, t2) =
+      let
+        fun go EMPTY = true
+          | go (SNOC (t1', lbl, a)) =
+              case find t2 lbl of
+                   NONE => false
+                 | SOME a' => f (a, a') andalso go (out t1')
+      in
+        go (out t1)
+      end
+
+    fun eq f (t1, t2) =
+      subtelescope f (t1, t2)
+        andalso subtelescope f (t2, t1)
+  end
+
 end
 
-functor SearchTelescope (T : TELESCOPE) : SEARCH_TELESCOPE =
+functor TelescopeUtil (T : TELESCOPE) : TELESCOPE_UTIL =
 struct
-  structure T = T
-  open T.SnocView
+  open T
 
   fun search tel phi =
     let
+      open SnocView
       val rec go =
         fn EMPTY => NONE
          | SNOC (tele', lbl, a) =>
@@ -193,15 +212,10 @@ struct
     in
       go (out tel)
     end
-end
-
-functor ShowTelescope (T : TELESCOPE) : SHOW_TELESCOPE =
-struct
-  structure T = T
-  open T.ConsView
 
   fun toString pretty =
     let
+      open ConsView
       fun go r =
         fn EMPTY => r
          | CONS (lbl, a, tele') =>
@@ -209,96 +223,6 @@ struct
     in
       go "\194\183" o out
     end
-end
-
-functor CompareTelescope
-  (structure T : TELESCOPE
-   structure E : ORDERED) : COMPARE_TELESCOPE =
-struct
-  structure T = T and E = E
-  local
-    open T.SnocView
-  in
-    fun subtelescope (t1, t2) =
-      let
-        fun go EMPTY = true
-          | go (SNOC (t1', lbl, a)) =
-              case T.find t2 lbl of
-                   NONE => false
-                 | SOME a' => E.eq (a, a') andalso go (out t1')
-      in
-        go (out t1)
-      end
-
-    fun eq (t1, t2) =
-      subtelescope (t1, t2)
-        andalso subtelescope (t2, t1)
-  end
-end
-
-functor UnifyTelescope
-  (structure T : TELESCOPE
-   type term
-   structure Ren : DICT where type key = T.label
-   val unifyTerm : term * term -> T.label Ren.dict option
-   val rename : T.label Ren.dict -> term -> term) : UNIFY_TELESCOPE =
-struct
-  structure T = T
-  type term = term
-  type ren = T.label Ren.dict
-
-  exception UnificationFailed
-
-  open T.ConsView
-
-  fun renUnion rho1 rho2 =
-    Ren.union rho1 rho2 (fn (_, x, y) =>
-      if T.Label.eq (x, y) then
-        x
-      else
-        raise UnificationFailed)
-
-  fun unifyEq (t1, t2) =
-    let
-      fun go rho =
-        fn (EMPTY, EMPTY) => rho
-         | (CONS (l1, a1, t1'), CONS (l2, a2, t2')) =>
-             (case unifyTerm (rename rho a1, a2) of
-                 SOME rho' =>
-                   go (renUnion (Ren.insert rho l1 l2) rho') (out t1', out t2')
-               | NONE => raise UnificationFailed)
-         | _ => raise UnificationFailed
-    in
-      go Ren.empty (out t1, out t2)
-    end
-
-  fun unifySub (t1, t2) =
-    let
-      fun go rho =
-        fn (CONS (l1, a1, t1'), CONS (l2, a2, t2')) =>
-             let
-               val rho' = Ren.insert rho l1 l2
-             in
-               case unifyTerm (rename rho a1, a2) of
-                   SOME rho'' => go (renUnion rho' rho'') (out t1', out t2')
-                 | NONE => go rho' (CONS (l1, a1, t1'), out t2')
-             end
-         | (EMPTY, _) => rho
-         | (_, EMPTY) => raise UnificationFailed
-    in
-      go Ren.empty (out t1, out t2)
-    end
-
-  fun unifyEqOpt (t1, t2) =
-    SOME (unifyEq (t1, t2) )
-    handle UnificationFailed => NONE
-         | e => raise e
-
-  fun unifySubOpt (t1, t2) =
-    SOME (unifySub (t1, t2) )
-    handle UnificationFailed => NONE
-         | e => raise e
-
 end
 
 functor TelescopeNotation (T : TELESCOPE) : TELESCOPE_NOTATION =

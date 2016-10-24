@@ -71,6 +71,9 @@ sig
   val foldr : (label * 'a * 'b -> 'b) -> 'b -> 'a telescope -> 'b
   val foldl : (label * 'a * 'b -> 'b) -> 'b -> 'a telescope -> 'b
 
+  (* exact equality, not alpha equivalence *)
+  val eq : ('a * 'a -> bool) -> 'a telescope * 'a telescope -> bool
+
   (* These views may be used to lazily walk along a telescope *)
   structure SnocView : SNOC_VIEW
     where type 'a telescope = 'a telescope
@@ -81,49 +84,11 @@ sig
     where type label = label
 end
 
-signature SHOW_TELESCOPE =
+signature TELESCOPE_UTIL =
 sig
-  structure T : TELESCOPE
-
-  val toString : ('a -> string) -> 'a T.telescope -> string
-end
-
-signature COMPARE_TELESCOPE =
-sig
-  structure E : ORDERED
-  structure T : TELESCOPE
-
-  (* exact equality, does not respect alpha equivalence *)
-  val eq : E.t T.telescope * E.t T.telescope -> bool
-  val subtelescope : E.t T.telescope * E.t T.telescope -> bool
-end
-
-signature UNIFY_TELESCOPE =
-sig
-  structure T : TELESCOPE
-
-  type term
-  type ren
-
-  (* alpha-equivalence of telescopes; throws [UnificationFailed]
-   * if the telescopes do not unify. When [unify (t1, t2)] ==> [rho],
-   * this means that [rho*t1] == [t2]. *)
-  val unifyEq : term T.telescope * term T.telescope -> ren
-
-  (* alpha-subtelescoping *)
-  val unifySub : term T.telescope * term T.telescope -> ren
-
-  (* total versions of [unifyEq], [unifySub] *)
-  val unifyEqOpt : term T.telescope * term T.telescope -> ren option
-  val unifySubOpt : term T.telescope * term T.telescope -> ren option
-
-  exception UnificationFailed
-end
-
-signature SEARCH_TELESCOPE =
-sig
-  structure T : TELESCOPE
-  val search : 'a T.telescope -> ('a -> bool) -> (T.label * 'a) option
+  include TELESCOPE
+  val toString : ('a -> string) -> 'a telescope -> string
+  val search : 'a telescope -> ('a -> bool) -> (label * 'a) option
 end
 
 signature TELESCOPE_NOTATION =

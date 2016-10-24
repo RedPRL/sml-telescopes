@@ -1,15 +1,10 @@
 Library
   signature TELESCOPE
-  signature COMPARE_TELESCOPE
-  signature SHOW_TELESCOPE
-  signature SEARCH_TELESCOPE
-  signature UNIFY_TELESCOPE
+  signature TELESCOPE_UTIL
+  signature TELESCOPE_NOTATION
   functor Telescope
-  functor ShowTelescope
+  functor TelescopeUtil
   functor TelescopeNotation
-  functor SearchTelescope
-  functor CompareTelescope
-  functor UnifyTelescope
 is
   $/basis.cm
   lib/cmlib.cm

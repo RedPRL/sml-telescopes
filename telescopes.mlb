@@ -5,14 +5,9 @@ local
   src/telescope.fun
 in
   signature TELESCOPE
-  signature COMPARE_TELESCOPE
-  signature UNIFY_TELESCOPE
-  signature SHOW_TELESCOPE
-  signature SEARCH_TELESCOPE
+  signature TELESCOPE_UTIL
+  signature TELESCOPE_NOTATION
   functor Telescope
-  functor ShowTelescope
-  functor CompareTelescope
-  functor UnifyTelescope
-  functor SearchTelescope
+  functor TelescopeUtil
   functor TelescopeNotation
 end
