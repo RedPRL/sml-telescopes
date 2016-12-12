@@ -40,6 +40,8 @@ sig
 
   val isEmpty : 'a telescope -> bool
 
+  exception Duplicate of label
+
   (* smart constructors *)
   val empty : 'a telescope
   val snoc : 'a telescope -> label -> 'a -> 'a telescope
