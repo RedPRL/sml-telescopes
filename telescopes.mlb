@@ -1,6 +1,8 @@
 local
   $(SML_LIB)/basis/basis.mlb
   lib/cmlib.mlb
+  src/deque_mini.sig
+  src/list_deque.sml
   src/telescope.sig
   src/telescope.fun
 in
