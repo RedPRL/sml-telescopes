@@ -20,14 +20,19 @@ struct
 
   val _ =
     let
-      val tele = empty >: ("1", 1) >: ("2", 2) >: ("3",3) >: ("4",4)
-      val tele' = empty >: ("1", 1) >: ("2",2)
+      val tele1234 = empty >: ("1",1) >: ("2", 2) >: ("3",3) >: ("4",4)
+      val tele12 = empty >: ("1",1) >: ("2",2)
+      val tele21 = empty >: ("2",2) >: ("1",1)
+      val tele34 = empty >: ("3",3) >: ("4",4)
     in
-      assert "refl" @@ eq op= (tele, tele);
-      assert "foldr" @@ T.foldr (fn (_, x, r) => x :: r) [] tele = [1,2,3,4];
-      assert "foldl" @@ T.foldl (fn (_, x, r) => x :: r) [] tele = [4,3,2,1];
-      assert "truncateFrom" @@ eq op= (truncateFrom tele "3", tele');
-      assert "truncateFrom/not-a-key" @@ eq op= (truncateFrom tele "not-a-key", tele)
+      assert "refl" @@ eq op= (tele1234, tele1234);
+      assert "eq/reorder" @@ not (eq op= (tele12, tele21));
+      assert "foldr" @@ T.foldr (fn (_, x, r) => x :: r) [] tele1234 = [1,2,3,4];
+      assert "foldl" @@ T.foldl (fn (_, x, r) => x :: r) [] tele1234 = [4,3,2,1];
+      assert "truncateFrom" @@ eq op= (truncateFrom tele1234 "3", tele12);
+      assert "truncateFrom/not-a-key" @@ eq op= (truncateFrom tele1234 "not-a-key", tele1234);
+      assert "dropUntil" @@ eq op= (dropUntil tele1234 "2", tele34);
+      assert "dropUntil/not-a-key" @@ eq op= (dropUntil tele1234 "not-a-key", tele1234)
     end
 
 end
