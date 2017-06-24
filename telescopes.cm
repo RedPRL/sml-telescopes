@@ -8,5 +8,7 @@ Library
 is
   $/basis.cm
   lib/cmlib.cm
+  src/deque_mini.sig
+  src/list_deque.sml
   src/telescope.sig
   src/telescope.fun

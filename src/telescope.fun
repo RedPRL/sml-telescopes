@@ -2,6 +2,7 @@ functor Telescope (L : TELESCOPE_LABEL) :> TELESCOPE where type Label.t = L.t =
 struct
   structure Label = L
   structure D = SplayDict (structure Key = L)
+  structure LD = ListDeque
 
   type label = L.t
 
@@ -10,31 +11,29 @@ struct
 
   structure Internal =
   struct
-    type 'a telescope = L.t list * 'a D.dict
+    type 'a telescope = L.t LD.t * 'a D.dict
 
-    val isEmpty =
-      fn ([], _) => true
-       | _ => false
+    fun isEmpty (list, _) = LD.isEmpty list
 
-    val empty = ([], D.empty)
+    val empty = (LD.empty, D.empty)
 
     fun snoc (list, dict) lbl x =
       if D.member dict lbl then
         raise Duplicate lbl
       else
-        (lbl :: list, D.insert dict lbl x)
+        (LD.snoc (list, lbl), D.insert dict lbl x)
 
     fun cons lbl x (list, dict) =
       if D.member dict lbl then
         raise Duplicate lbl
       else
-        (list @ [lbl], D.insert dict lbl x)
+        (LD.cons (lbl, list), D.insert dict lbl x)
 
     fun append (list1, dict1) (list2, dict2) =
       let
         val dict = D.union dict1 dict2 (fn (l, _, _) => raise Duplicate l)
       in
-        (list2 @ list1, dict)
+        (LD.append (list1, list2), dict)
       end
 
     fun lookup (list, dict) lbl =
@@ -55,26 +54,24 @@ struct
 
     fun modifyAfter lbl f (list, dict) =
       let
-        fun go [] dict = dict
-          | go (l :: ls) dict =
-              if L.eq (l, lbl) then
-                dict
-              else
-                let
-                  val a = D.lookup dict l
-                  val a' = f a
-                in
-                  go ls (D.insert dict l a')
-                end
-
+        val list = LD.toList list
+        fun dropPrefix [] = []
+          | dropPrefix (l :: ls) =
+              if L.eq (l, lbl) then ls else dropPrefix ls
+        val suffix = dropPrefix list
+        val updatedDict = List.foldl
+              (fn (l, d) => #3 (D.operate' d l (fn _ => NONE) (SOME o f)))
+              dict suffix
       in
-        (list, go list dict)
+        (LD.fromList list, updatedDict)
       end
 
     fun remove lbl (list, dict) =
-      (List.filter (fn l => not (L.eq (l, lbl))) list,
+      (LD.filter (fn l => not (L.eq (l, lbl))) list,
        D.remove dict lbl)
 
+    (* this intends to returns a tuple (xs, ys)
+     * such that revAppend xs (y :: ys) is the input. *)
     fun splitList x =
       let
         fun go xs [] = (xs, [])
@@ -90,17 +87,17 @@ struct
     fun splice (list, dict) x (listx, dictx) =
       let
         val dict' = D.union (D.remove dict x) dictx (fn (l, _, _) => raise Duplicate l)
-        val (xs, ys) = splitList x list
+        val (xs, ys) = splitList x (LD.toList list)
       in
-        (List.rev xs @ listx @ ys, dict')
+        (LD.fromList (List.concat [List.rev xs, (LD.toList listx), ys]), dict')
       end
 
     fun truncateFrom (ys, dict) y =
       if D.member dict y then
         let
-          val (xs, zs) = splitList y ys
+          val (xs, zs) = splitList y (LD.toList ys)
         in
-          (zs, List.foldl (fn (x, dict') => D.remove dict' x) dict xs)
+          (LD.fromList (List.rev xs), List.foldl (fn (z, dict') => D.remove dict' z) dict zs)
         end
       else
         (ys, dict)
@@ -108,18 +105,18 @@ struct
     fun dropUntil (ys, dict) y =
       if D.member dict y then
         let
-          val (xs, zs) = splitList y ys
+          val (xs, zs) = splitList y (LD.toList ys)
         in
-          (xs, List.foldl (fn (z, dict') => D.remove dict' z) dict zs)
+          (LD.fromList zs, List.foldl (fn (x, dict') => D.remove dict' x) dict xs)
         end
       else
         (ys, dict)
 
-    fun foldr alg z (list, dict) =
-      List.foldl (fn (x, b) => alg (x, D.lookup dict x, b)) z list
-
     fun foldl alg z (list, dict) =
-      List.foldr (fn (x, b) => alg (x, D.lookup dict x, b)) z list
+      LD.foldl (fn (x, b) => alg (x, D.lookup dict x, b)) z list
+
+    fun foldr alg z (list, dict) =
+      LD.foldr (fn (x, b) => alg (x, D.lookup dict x, b)) z list
 
     structure ConsView =
     struct
@@ -134,15 +131,11 @@ struct
         fn EMPTY => empty
          | CONS (lbl, a, r) => cons lbl a r
 
-      val out =
-        fn ([], _) => EMPTY
-         | (xs as _ ::_, dict) =>
-             let
-               val x = List.last xs
-               val a = D.lookup dict x
-             in
-               CONS (x, a, (List.take (xs, List.length xs - 1), D.remove dict x))
-             end
+      fun out (list, dict) =
+        case LD.showcons list of
+             LD.EMPTY => EMPTY
+           | LD.CONS (x, xs) =>
+               CONS (x, D.lookup dict x, (xs, D.remove dict x))
 
       fun outAfter x t =
         out (dropUntil t x)
@@ -157,13 +150,25 @@ struct
            EMPTY
          | SNOC of 'r * label * 'a
 
-      val out =
-        fn ([], _) => EMPTY
-         | (x :: xs, dict) => SNOC ((xs, D.remove dict x), x, D.lookup dict x)
-
       val into =
         fn EMPTY => empty
          | SNOC (r, x, a) => snoc r x a
+
+      (* favonia: this is inefficient by design.
+       * We decided to sacrifice SnocView for ConsView (and simplicity). *)
+      val out' =
+        fn ([], _) => EMPTY
+         | (l as _ :: _ , dict) =>
+             let
+               fun showsnoc (_, []) = raise List.Empty
+                 | showsnoc (xs, [y]) = (List.rev xs, y)
+                 | showsnoc (xs, y :: z :: zs) =
+                     showsnoc (y :: xs, z :: zs)
+                val (xs, x) = showsnoc ([], l)
+             in
+               SNOC ((LD.fromList xs, D.remove dict x), x, D.lookup dict x)
+             end
+      fun out (list, dict) = out' (LD.toList list, dict)
     end
   end
 
@@ -176,22 +181,23 @@ struct
     splice t x (cons x (lookup t x) t')
 
   local
-    open SnocView
+    open ConsView
   in
     fun subtelescope f (t1, t2) =
-      let
-        fun go EMPTY = true
-          | go (SNOC (t1', lbl, a)) =
-              case find t2 lbl of
-                   NONE => false
-                 | SOME a' => f (a, a') andalso go (out t1')
-      in
-        go (out t1)
-      end
+      case out t1 of
+        EMPTY => true
+      | CONS (lbl, a1, t1) =>
+          case find t2 lbl of
+            NONE => false
+          | SOME a2 => f (a1, a2)
+              andalso subtelescope f (t1, dropUntil t2 lbl)
 
     fun eq f (t1, t2) =
-      subtelescope f (t1, t2)
-        andalso subtelescope f (t2, t1)
+      case (out t1, out t2) of
+        (EMPTY, EMPTY) => true
+      | (CONS (lbl1, a1, t1), CONS (lbl2, a2, t2)) =>
+          L.eq (lbl1, lbl2) andalso f (a1, a2) andalso eq f (t1, t2)
+      | _ => false
   end
 
 end
@@ -202,14 +208,14 @@ struct
 
   fun search tel phi =
     let
-      open SnocView
+      open ConsView
       val rec go =
         fn EMPTY => NONE
-         | SNOC (tele', lbl, a) =>
+         | CONS (lbl, a, tel) =>
              if phi a then
                SOME (lbl, a)
              else
-               go (out tele')
+               go (out tel)
     in
       go (out tel)
     end
