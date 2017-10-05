@@ -4,4 +4,4 @@ Library
   functor SplayDict
   structure StringListDict
 is
-  cmlib/cmlib.cm
+  $libs/cmlib/cmlib.cm
