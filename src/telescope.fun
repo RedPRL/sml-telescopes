@@ -97,7 +97,7 @@ struct
         let
           val (xs, zs) = splitList y (LD.toList ys)
         in
-          (LD.fromList (List.rev xs), List.foldl (fn (z, dict') => D.remove dict' z) dict zs)
+          (LD.fromList (List.rev xs), List.foldl (fn (z, dict') => D.remove dict' z) dict (y :: zs))
         end
       else
         (ys, dict)
